@@ -1,0 +1,8 @@
+{
+  "name": "زیبانو | سامانه هوشمند رزرو و مقایسه آرایشگاه",
+  "description": "سامانه هوشمند جستجو، مقایسه و رزرو آنلاین آرایشگاه‌های زنانه و مردانه و خدمات در محل — پروژه درس تجارت الکترونیکی دانشگاه یزد",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
