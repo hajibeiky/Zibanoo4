@@ -168,23 +168,30 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
                 <span className="font-bold text-[#3b185f]">دسترسی سریع:</span>
                 <button 
-                  onClick={() => onNavigate('search', { gender: 'women' })}
-                  className="px-2.5 py-1 rounded-md bg-white border border-slate-200 hover:border-[#3b185f] text-slate-700 transition-colors"
+                  onClick={() => onNavigate('women-salons')}
+                  className="px-2.5 py-1 rounded-md bg-white border border-slate-200 hover:border-[#3b185f] text-slate-700 transition-colors cursor-pointer"
                 >
                   سالن‌های زنانه
                 </button>
                 <button 
-                  onClick={() => onNavigate('search', { gender: 'men' })}
-                  className="px-2.5 py-1 rounded-md bg-white border border-slate-200 hover:border-[#3b185f] text-slate-700 transition-colors"
+                  onClick={() => onNavigate('men-salons')}
+                  className="px-2.5 py-1 rounded-md bg-white border border-slate-200 hover:border-[#3b185f] text-slate-700 transition-colors cursor-pointer"
                 >
                   پیرایش‌های مردانه
                 </button>
                 <button 
+                  onClick={() => onNavigate('simulator')}
+                  className="px-2.5 py-1 rounded-md bg-amber-50 border border-amber-300 text-amber-900 hover:bg-amber-100 transition-colors font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Sparkles className="w-3 h-3 text-amber-600" />
+                  شبیه‌ساز زیبایی چهره
+                </button>
+                <button 
                   onClick={() => onNavigate('dossier')}
-                  className="px-2.5 py-1 rounded-md bg-purple-100 text-[#3b185f] hover:bg-purple-200 transition-colors font-medium flex items-center gap-1"
+                  className="px-2.5 py-1 rounded-md bg-purple-100 text-[#3b185f] hover:bg-purple-200 transition-colors font-medium flex items-center gap-1 cursor-pointer"
                 >
                   <BookOpen className="w-3 h-3" />
-                  مطالعه پرونده تحلیلی کسب‌وکار
+                  پرونده تحلیلی کسب‌وکار
                 </button>
               </div>
             </div>
@@ -207,8 +214,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       <ShieldCheck className="w-4 h-4 text-emerald-600" />
                       تضمین شفافیت قیمت و کیفیت
                     </span>
-                    <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
-                      فاز ۱ دانشگاهی
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                      سامانه برخط
                     </span>
                   </div>
                   <p className="text-xs text-slate-600 leading-relaxed">
@@ -260,8 +267,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <span className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800">خدمات در محل</span>
               </div>
               <button
-                onClick={() => onNavigate('search', { gender: 'women' })}
-                className="w-full py-3 px-4 bg-[#3b185f] hover:bg-[#2b1047] text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2"
+                onClick={() => onNavigate('women-salons')}
+                className="w-full py-3 px-4 bg-[#3b185f] hover:bg-[#2b1047] text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>مشاهده سالن‌های زیبایی بانوان</span>
                 <ArrowLeft className="w-4 h-4 text-amber-300" />
@@ -296,8 +303,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <span className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800">پیرایش در منزل</span>
               </div>
               <button
-                onClick={() => onNavigate('search', { gender: 'men' })}
-                className="w-full py-3 px-4 bg-[#240c3d] hover:bg-slate-900 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2"
+                onClick={() => onNavigate('men-salons')}
+                className="w-full py-3 px-4 bg-[#240c3d] hover:bg-slate-900 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>مشاهده آرایشگاه‌های مردانه</span>
                 <ArrowLeft className="w-4 h-4 text-amber-300" />
@@ -323,14 +330,23 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {/* Adv 1 */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-[#3b185f]/40 transition-colors space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-50 text-[#3b185f] flex items-center justify-center">
-              <ArrowLeftRight className="w-5 h-5 text-amber-600" />
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-[#3b185f]/40 transition-colors space-y-3 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-50 text-[#3b185f] flex items-center justify-center">
+                <ArrowLeftRight className="w-5 h-5 text-amber-600" />
+              </div>
+              <h3 className="font-bold text-base text-slate-900">چند آرایشگاه، یک انتخاب هوشمندانه</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                آرایشگاه‌های موردنظرت را کنار هم قرار بده و قیمت خدمات، نمونه‌کارها، امکانات و فاصله آن‌ها را بررسی کن تا انتخاب مناسب‌تری داشته باشی.
+              </p>
             </div>
-            <h3 className="font-bold text-base text-slate-900">۱. مقایسه در یک صفحه</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              امکان انتخاب ۲ یا ۳ آرایشگاه و سنجش همزمان قیمت، تخصص‌ها، نمونه‌کارها و موقعیت مکانی بدون باز کردن ده‌ها پیج مختلف.
-            </p>
+            <button
+              onClick={() => onNavigate('compare')}
+              className="mt-2 w-full py-2 px-3 rounded-lg bg-purple-50 hover:bg-purple-100 text-[#3b185f] text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <span>شروع مقایسه آرایشگاه‌ها</span>
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           {/* Adv 2 */}
@@ -586,7 +602,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 سامانه هوشمند جستجو، مقایسه و رزرو آنلاین آرایشگاه‌های زنانه و مردانه و خدمات در محل.
               </p>
               <div className="pt-2 text-slate-400 text-[11px]">
-                پروژه فاز اول درس تجارت الکترونیکی — دانشگاه یزد
+                پلتفرم تخصصی معرفی و رزرو آنلاین خدمات زیبایی و مراقبت شخصی
               </div>
             </div>
 
@@ -594,8 +610,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <span className="font-bold text-slate-800 text-sm block">دسترسی سریع</span>
               <ul className="space-y-1.5 text-slate-600">
                 <li><button onClick={() => onNavigate('home')} className="hover:text-[#3b185f]">صفحه اصلی</button></li>
-                <li><button onClick={() => onNavigate('search', { gender: 'women' })} className="hover:text-[#3b185f]">آرایشگاه‌های زنانه</button></li>
-                <li><button onClick={() => onNavigate('search', { gender: 'men' })} className="hover:text-[#3b185f]">آرایشگاه‌های مردانه</button></li>
+                <li><button onClick={() => onNavigate('women-salons')} className="hover:text-[#3b185f]">آرایشگاه‌های زنانه</button></li>
+                <li><button onClick={() => onNavigate('men-salons')} className="hover:text-[#3b185f]">آرایشگاه‌های مردانه</button></li>
                 <li><button onClick={() => onNavigate('search', { homeServiceOnly: true })} className="hover:text-[#3b185f]">خدمات زیبایی در محل</button></li>
               </ul>
             </div>
@@ -603,29 +619,30 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <div className="space-y-2">
               <span className="font-bold text-slate-800 text-sm block">امکانات پلتفرم</span>
               <ul className="space-y-1.5 text-slate-600">
+                <li><button onClick={() => onNavigate('simulator')} className="hover:text-[#3b185f]">شبیه‌ساز زیبایی چهره</button></li>
                 <li><button onClick={() => onNavigate('compare')} className="hover:text-[#3b185f]">مقایسه آرایشگاه‌ها</button></li>
                 <li><button onClick={() => onNavigate('my-bookings')} className="hover:text-[#3b185f]">پیگیری نوبت‌ها</button></li>
-                <li><button onClick={() => onNavigate('barber-panel')} className="hover:text-[#3b185f]">پنل آزمایشی آرایشگر</button></li>
+                <li><button onClick={() => onNavigate('barber-panel')} className="hover:text-[#3b185f]">پنل اختصاصی آرایشگر</button></li>
                 <li><button onClick={() => onNavigate('dossier')} className="hover:text-[#3b185f] font-semibold text-[#3b185f]">پرونده تحلیلی کسب‌وکار</button></li>
               </ul>
             </div>
 
             <div className="space-y-2">
-              <span className="font-bold text-slate-800 text-sm block">شفافیت دانشگاهی</span>
+              <span className="font-bold text-slate-800 text-sm block">شفافیت و امنیت خدمات</span>
               <p className="text-slate-500 leading-relaxed text-[11px]">
-                این وب‌اپلیکیشن به عنوان محصول اولیه قابل آزمایش (MVP) طراحی شده است. کلیه رزروها و اطلاعات آرایشگاه‌ها آزمایشی بوده و هیچ درگاه پرداخت واقعی یا اطلاعات بانکی دریافت نمی‌شود.
+                کلیه آرایشگاه‌ها و تعرفه‌ها با تایید رسمی سالن‌داران در زیبانو ثبت شده‌اند. تسویه‌حساب نهایی خدمات در محل سالن یا منزل با رضایت کامل مشتری انجام می‌شود.
               </p>
             </div>
           </div>
 
           <div className="border-t border-slate-200/80 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-500 text-[11px]">
             <div>
-              © ۱۴۰۳ زیبانو (ZIBANO) — طراحی و توسعه برای درس تجارت الکترونیکی دانشگاه یزد
+              © ۱۴۰۳ زیبانو (ZIBANO) — تمامی حقوق برای سامانه هوشمند رزرو آرایشگاه محفوظ است.
             </div>
             <div className="flex items-center gap-4">
               <span>انتخاب آگاهانه، رزرو آسان</span>
-              <button onClick={() => onNavigate('dossier')} className="text-[#3b185f] font-bold underline">
-                مشاهده گزارش علمی فاز ۱
+              <button onClick={() => onNavigate('dossier')} className="text-[#3b185f] font-bold underline cursor-pointer">
+                مشاهده پرونده تحلیلی کسب‌وکار
               </button>
             </div>
           </div>

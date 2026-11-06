@@ -21,6 +21,7 @@ interface SalonDetailViewProps {
   onBook: (salon: Salon, preselectedService?: ServiceItem) => void;
   onToggleCompare: (salon: Salon) => void;
   isCompared: boolean;
+  onOpenSimulator?: (portfolioItem?: any) => void;
 }
 
 export const SalonDetailView: React.FC<SalonDetailViewProps> = ({
@@ -28,7 +29,8 @@ export const SalonDetailView: React.FC<SalonDetailViewProps> = ({
   onBack,
   onBook,
   onToggleCompare,
-  isCompared
+  isCompared,
+  onOpenSimulator
 }) => {
   const [activeTab, setActiveTab] = useState<'services' | 'portfolio' | 'home-service' | 'reviews'>('services');
   const [selectedGalleryIdx, setSelectedGalleryIdx] = useState(0);
@@ -116,9 +118,42 @@ export const SalonDetailView: React.FC<SalonDetailViewProps> = ({
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                   {salon.name}
                 </h1>
+                {salon.slogan && (
+                  <span className="text-xs font-bold text-amber-700 block mt-1">
+                    «{salon.slogan}»
+                  </span>
+                )}
                 <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
                   {salon.description}
                 </p>
+              </div>
+
+              {/* Owner Info & Travel Time Badge */}
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+                {salon.ownerName && (
+                  <div className="flex items-center gap-2">
+                    {salon.ownerAvatar ? (
+                      <img src={salon.ownerAvatar} alt={salon.ownerName} className="w-8 h-8 rounded-full object-cover border border-amber-300" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-[#3b185f] text-white flex items-center justify-center font-bold text-xs">
+                        {salon.ownerName[0]}
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">مدیریت سالن:</span>
+                      <strong className="text-slate-800">{salon.ownerName}</strong>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 text-slate-600">
+                  <span className="bg-white px-2 py-1 rounded-md border border-slate-200 text-[11px] font-semibold text-[#3b185f]">
+                    🚗 فاصله با خودرو: حدود ۱۲ دقیقه
+                  </span>
+                  <span className="bg-white px-2 py-1 rounded-md border border-slate-200 text-[11px] font-semibold text-slate-700">
+                    🚶 پیاده: ۲۸ دقیقه
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-2 text-xs text-slate-700 pt-2 border-t border-slate-100">
@@ -285,12 +320,24 @@ export const SalonDetailView: React.FC<SalonDetailViewProps> = ({
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
                   </div>
-                  <div className="p-4 space-y-1">
-                    <span className="text-[11px] font-semibold text-[#3b185f]">
-                      {item.category}
-                    </span>
-                    <h4 className="font-bold text-sm text-slate-900">{item.title}</h4>
-                    <p className="text-xs text-slate-500 leading-relaxed">{item.description}</p>
+                  <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-semibold text-[#3b185f]">
+                        {item.category}
+                      </span>
+                      <h4 className="font-bold text-sm text-slate-900">{item.title}</h4>
+                      <p className="text-xs text-slate-500 leading-relaxed">{item.description}</p>
+                    </div>
+
+                    {onOpenSimulator && (
+                      <button
+                        onClick={() => onOpenSimulator(item)}
+                        className="mt-3 w-full py-2 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-[#3b185f] text-xs font-bold transition-colors flex items-center justify-center gap-1.5 border border-purple-200/80 cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        <span>تست این مدل در شبیه‌ساز چهره</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Salon, ServiceItem, BookingRequest } from '../../types';
-import { TIME_SLOTS } from '../../data/mockData';
+import { TIME_SLOTS, IRAN_CITIES } from '../../data/mockData';
 import { 
   X, 
   Calendar, 
@@ -15,7 +15,8 @@ import {
   Home, 
   ArrowLeft, 
   Check,
-  FileText
+  Bell,
+  Map as MapIcon
 } from 'lucide-react';
 
 interface BookingModalProps {
@@ -37,7 +38,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   onSaveBooking,
   onViewMyBookings
 }) => {
-  // Steps: 1: Service, 2: Date & Time, 3: Contact & Location, 4: Review, 5: Confirmation
+  // Steps: 1: Service & Mode, 2: Date & Time, 3: Contact & Address, 4: Review, 5: Confirmation
   const [currentStep, setCurrentStep] = useState<number>(1);
 
   // Form states
@@ -46,7 +47,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   );
   const [serviceType, setServiceType] = useState<'in_salon' | 'at_home'>('in_salon');
   
-  // Tomorrow's date default
+  // Date setup (tomorrow as default)
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const defaultDateStr = tomorrow.toISOString().split('T')[0];
@@ -55,18 +56,26 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>(TIME_SLOTS[0]);
   const [customerName, setCustomerName] = useState<string>('');
   const [customerPhone, setCustomerPhone] = useState<string>('');
+  
+  // At-Home Detailed Address
+  const [province, setProvince] = useState<string>(salon.city);
+  const [customerCity, setCustomerCity] = useState<string>(salon.city);
   const [customerAddress, setCustomerAddress] = useState<string>('');
+  const [plaque, setPlaque] = useState<string>('');
+  const [unit, setUnit] = useState<string>('');
+  const [addressNotes, setAddressNotes] = useState<string>('');
+  const [enableReminder, setEnableReminder] = useState<boolean>(true);
+  
   const [bookingNotes, setBookingNotes] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Result state
   const [confirmedBooking, setConfirmedBooking] = useState<BookingRequest | null>(null);
 
   if (!isOpen) return null;
 
   const currentService = salon.services.find(s => s.id === selectedServiceId) || salon.services[0];
 
-  // Validation
+  // Validate step 2
   const validateStep2 = () => {
     if (!bookingDate) {
       setErrorMessage('لطفاً تاریخ مراجعه را مشخص کنید.');
@@ -78,12 +87,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       return false;
     }
 
-    // Check collision / duplicate slot for same salon, date, timeSlot
+    // Check collision / duplicate slot or salon blocked slots
     const isSlotTaken = existingBookings.some(
       b => b.salonId === salon.id && b.date === bookingDate && b.timeSlot === selectedTimeSlot && b.status !== 'cancelled' && b.status !== 'rejected'
     );
-    if (isSlotTaken) {
-      setErrorMessage('این سانس زمانی برای این آرایشگاه قبلاً رزرو شده است. لطفاً سانس دیگری انتخاب کنید.');
+    const isSlotBlocked = salon.blockedSlots?.some(
+      b => b.date === bookingDate && b.timeSlot === selectedTimeSlot
+    );
+
+    if (isSlotTaken || isSlotBlocked) {
+      setErrorMessage('این سانس زمانی برای این آرایشگاه رزرو یا مسدود شده است. لطفاً سانس دیگری انتخاب کنید.');
       return false;
     }
 
@@ -91,9 +104,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     return true;
   };
 
+  // Validate step 3
   const validateStep3 = () => {
     if (!customerName.trim() || customerName.trim().length < 3) {
-      setErrorMessage('لطفاً نام و نام خانوادگی را به طور کامل وارد کنید.');
+      setErrorMessage('لطفاً نام و نام خانوادگی خود را کامل وارد کنید.');
       return false;
     }
     const phoneRegex = /^09[0-9]{9}$/;
@@ -101,9 +115,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setErrorMessage('شماره موبایل نامعتبر است. نمونه صحیح: 09123456789');
       return false;
     }
-    if (serviceType === 'at_home' && (!customerAddress.trim() || customerAddress.trim().length < 8)) {
-      setErrorMessage('برای خدمات در محل، درج آدرس دقیق ضروری است.');
-      return false;
+
+    if (serviceType === 'at_home') {
+      if (customerCity !== salon.city) {
+        setErrorMessage(`این آرایشگاه در شهر ${salon.city} فعالیت می‌کند و خدمات در منزل فقط در محدوده شهر ${salon.city} امکان‌پذیر است.`);
+        return false;
+      }
+      if (!customerAddress.trim() || customerAddress.trim().length < 8) {
+        setErrorMessage('برای خدمات در محل، درج نشانی کامل و دقیق پستی ضروری است.');
+        return false;
+      }
     }
 
     setErrorMessage(null);
@@ -125,9 +146,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
   const handleFinalSubmit = () => {
     const trackingCode = `ZB-${Math.floor(10000 + Math.random() * 90000)}`;
-    const finalPrice = serviceType === 'at_home' 
-      ? currentService.price + salon.homeServiceFee 
-      : currentService.price;
+    const homeExtra = serviceType === 'at_home' ? salon.homeServiceFee : 0;
+    const finalPrice = currentService.price + homeExtra;
+
+    const fullAddress = serviceType === 'at_home'
+      ? `${customerCity}، ${customerAddress.trim()}${plaque ? `، پلاک ${plaque}` : ''}${unit ? `، واحد ${unit}` : ''}`
+      : undefined;
 
     const newBooking: BookingRequest = {
       id: `book-${Date.now()}`,
@@ -137,15 +161,28 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       serviceId: currentService.id,
       serviceName: currentService.name,
       price: finalPrice,
+      homeFee: homeExtra,
+      durationMinutes: currentService.durationMinutes,
       serviceType,
       customerName: customerName.trim(),
       customerPhone: customerPhone.trim(),
-      customerAddress: serviceType === 'at_home' ? customerAddress.trim() : undefined,
+      customerAddress: fullAddress,
+      addressDetail: serviceType === 'at_home' ? {
+        province,
+        city: customerCity,
+        address: customerAddress.trim(),
+        plaque: plaque.trim() || undefined,
+        unit: unit.trim() || undefined,
+        notes: addressNotes.trim() || undefined,
+        lat: salon.latitude,
+        lng: salon.longitude
+      } : undefined,
       date: bookingDate,
       timeSlot: selectedTimeSlot,
       notes: bookingNotes.trim() || undefined,
       status: 'pending',
-      createdAt: new Date().toLocaleDateString('fa-IR')
+      createdAt: new Date().toLocaleDateString('fa-IR'),
+      reminderEnabled: enableReminder
     };
 
     onSaveBooking(newBooking);
@@ -161,10 +198,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           <div>
             <div className="flex items-center gap-1.5 text-xs text-amber-300 font-semibold mb-1">
               <ShieldCheck className="w-4 h-4" />
-              <span>سناریوی آزمایشی رزرو آنلاین نوبت</span>
+              <span>رزرو آنلاین نوبت خدمات زیبایی</span>
             </div>
             <h3 className="text-lg sm:text-xl font-extrabold">{salon.name}</h3>
-            <span className="text-xs text-purple-200">{salon.city}، {salon.district}</span>
+            <span className="text-xs text-purple-200">{salon.city}، {salon.district} (مدیریت: {salon.ownerName})</span>
           </div>
 
           <button
@@ -178,13 +215,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         {/* Step Indicator */}
         {currentStep < 5 && (
           <div className="bg-slate-50 px-6 py-3 border-b border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span className={currentStep >= 1 ? 'text-[#3b185f] font-bold' : ''}>۱. انتخاب خدمت</span>
+            <span className={currentStep >= 1 ? 'text-[#3b185f] font-bold' : ''}>۱. خدمت و مکان</span>
             <span>←</span>
-            <span className={currentStep >= 2 ? 'text-[#3b185f] font-bold' : ''}>۲. تاریخ و زمان</span>
+            <span className={currentStep >= 2 ? 'text-[#3b185f] font-bold' : ''}>۲. روز و ساعت</span>
             <span>←</span>
-            <span className={currentStep >= 3 ? 'text-[#3b185f] font-bold' : ''}>۳. مشخصات</span>
+            <span className={currentStep >= 3 ? 'text-[#3b185f] font-bold' : ''}>۳. مشخصات و نشانی</span>
             <span>←</span>
-            <span className={currentStep >= 4 ? 'text-[#3b185f] font-bold' : ''}>۴. تایید نهایی</span>
+            <span className={currentStep >= 4 ? 'text-[#3b185f] font-bold' : ''}>۴. مرور و تأیید</span>
           </div>
         )}
 
@@ -200,29 +237,31 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         {currentStep === 1 && (
           <div className="p-6 space-y-5 text-xs">
             <div className="space-y-2">
-              <label className="block font-bold text-slate-800 text-sm">نوع مراجعه:</label>
+              <label className="block font-bold text-slate-800 text-sm">نوع دریافت خدمت:</label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setServiceType('in_salon')}
-                  className={`p-3 rounded-xl border text-right transition-all flex flex-col justify-between ${
+                  className={`p-3.5 rounded-2xl border text-right transition-all flex flex-col justify-between ${
                     serviceType === 'in_salon'
-                      ? 'border-[#3b185f] bg-purple-50/70 text-[#2a0e44] font-bold shadow-xs'
+                      ? 'border-[#3b185f] bg-purple-50/80 text-[#2a0e44] font-bold shadow-xs'
                       : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  <span className="font-bold flex items-center gap-1.5">
+                  <span className="font-bold flex items-center gap-1.5 text-xs">
                     <Scissors className="w-4 h-4 text-purple-700" />
-                    مراجعه حضوری به آرایشگاه
+                    مراجعه حضوری به سالن
                   </span>
-                  <span className="text-[11px] text-slate-500 mt-1">در محل سالن ({salon.district})</span>
+                  <span className="text-[11px] text-slate-500 mt-1">
+                    نشانی: {salon.address}
+                  </span>
                 </button>
 
                 <button
                   type="button"
                   disabled={!salon.hasHomeService}
                   onClick={() => salon.hasHomeService && setServiceType('at_home')}
-                  className={`p-3 rounded-xl border text-right transition-all flex flex-col justify-between ${
+                  className={`p-3.5 rounded-2xl border text-right transition-all flex flex-col justify-between ${
                     !salon.hasHomeService
                       ? 'opacity-40 cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
                       : serviceType === 'at_home'
@@ -230,9 +269,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  <span className="font-bold flex items-center gap-1.5">
+                  <span className="font-bold flex items-center gap-1.5 text-xs">
                     <Home className="w-4 h-4 text-amber-700" />
-                    خدمات در محل (منزل)
+                    خدمات در محل مشتری (منزل)
                   </span>
                   <span className="text-[11px] text-slate-500 mt-1">
                     {salon.hasHomeService ? `+${salon.homeServiceFee.toLocaleString('fa-IR')} ت ایاب‌وذهاب` : 'غیرفعال در این سالن'}
@@ -242,8 +281,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             </div>
 
             <div className="space-y-2">
-              <label className="block font-bold text-slate-800 text-sm">انتخاب خدمت مورد نظر:</label>
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              <label className="block font-bold text-slate-800 text-sm">انتخاب خدمت تخصصی:</label>
+              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                 {salon.services.map((srv) => {
                   const isSelected = selectedServiceId === srv.id;
                   return (
@@ -283,7 +322,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           <div className="p-6 space-y-5 text-xs">
             <div className="space-y-1.5">
               <label className="block font-bold text-slate-800 text-sm">
-                تاریخ مراجعه:
+                تاریخ مراجعه یا اعزام:
               </label>
               <input
                 type="date"
@@ -293,7 +332,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#3b185f]/20 focus:border-[#3b185f]"
               />
               <span className="text-[11px] text-slate-400 block">
-                سامانه به طور خودکار از ثبت تاریخ‌های گذشته جلوگیری می‌کند.
+                سامانه از انتخاب تاریخ‌های گذشته یا نامعتبر جلوگیری می‌کند.
               </span>
             </div>
 
@@ -306,16 +345,20 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   const isTaken = existingBookings.some(
                     b => b.salonId === salon.id && b.date === bookingDate && b.timeSlot === slot && b.status !== 'cancelled' && b.status !== 'rejected'
                   );
+                  const isBlocked = salon.blockedSlots?.some(
+                    b => b.date === bookingDate && b.timeSlot === slot
+                  );
+                  const isUnavailable = isTaken || isBlocked;
                   const isSelected = selectedTimeSlot === slot;
 
                   return (
                     <button
                       key={slot}
                       type="button"
-                      disabled={isTaken}
+                      disabled={isUnavailable}
                       onClick={() => setSelectedTimeSlot(slot)}
                       className={`p-2.5 rounded-xl border text-center transition-all ${
-                        isTaken
+                        isUnavailable
                           ? 'opacity-40 bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed line-through'
                           : isSelected
                           ? 'bg-[#3b185f] text-white border-[#3b185f] font-bold shadow-xs'
@@ -325,6 +368,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       <Clock className="w-3.5 h-3.5 mx-auto mb-1 opacity-70" />
                       <span className="tabular-nums font-semibold">{slot}</span>
                       {isTaken && <span className="block text-[9px] text-red-500 font-bold">رزرو شده</span>}
+                      {isBlocked && <span className="block text-[9px] text-red-500 font-bold">استراحت سالن</span>}
                     </button>
                   );
                 })}
@@ -333,17 +377,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           </div>
         )}
 
-        {/* Step 3: Contact & Address */}
+        {/* Step 3: Contact & Address Details */}
         {currentStep === 3 && (
-          <div className="p-6 space-y-4 text-xs">
+          <div className="p-6 space-y-4 text-xs max-h-[65vh] overflow-y-auto">
             <div className="space-y-1.5">
               <label className="block font-bold text-slate-800 text-sm">
-                نام و نام خانوادگی متقاضی:
+                نام و نام خانوادگی مشتری:
               </label>
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="مثال: سارا محمدی / امیر رضایی"
+                  placeholder="مثال: نرگس امینی / احسان صادقی"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 pl-8 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#3b185f]/20 focus:border-[#3b185f]"
@@ -354,7 +398,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
             <div className="space-y-1.5">
               <label className="block font-bold text-slate-800 text-sm">
-                شماره تماس همراه (جهت هماهنگی):
+                شماره موبایل جهت هماهنگی نوبت:
               </label>
               <div className="relative">
                 <input
@@ -367,81 +411,146 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 />
                 <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3" />
               </div>
-              <span className="text-[11px] text-slate-400 block">
-                شماره آزمایشی ۱۱ رقمی وارد نمایید.
-              </span>
             </div>
 
+            {/* If At-Home Service: Detailed address & map coordinates */}
             {serviceType === 'at_home' && (
-              <div className="space-y-1.5">
-                <label className="block font-bold text-amber-900 text-sm">
-                  آدرس دقیق محل دریافت خدمت:
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="نام شهر، محله، خیابان، پلاک و زنگ..."
-                  value={customerAddress}
-                  onChange={(e) => setCustomerAddress(e.target.value)}
-                  className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/20"
-                />
+              <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-3">
+                <div className="font-bold text-amber-950 text-xs flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-amber-700" />
+                  <span>آدرس و موقعیت دقیق محل دریافت خدمت:</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="font-bold text-slate-700">استان / شهر:</label>
+                    <input
+                      type="text"
+                      value={customerCity}
+                      disabled
+                      className="w-full bg-white border border-amber-300 rounded-xl p-2 text-xs font-bold text-slate-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700">محدوده سرویس‌دهی:</label>
+                    <span className="block p-2 text-[11px] text-amber-800 font-semibold">
+                      محدوده شهر {salon.city}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">نشانی کامل پستی (محله، خیابان، کوچه):</label>
+                  <textarea
+                    rows={2}
+                    placeholder="مثال: صفائیه، بلوار دانشگاه، کوچه شاهد ۴"
+                    value={customerAddress}
+                    onChange={(e) => setCustomerAddress(e.target.value)}
+                    className="w-full bg-white border border-amber-300 rounded-xl p-2 text-xs"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="font-bold text-slate-700">پلاک:</label>
+                    <input
+                      type="text"
+                      placeholder="مثال: ۲۴"
+                      value={plaque}
+                      onChange={(e) => setPlaque(e.target.value)}
+                      className="w-full bg-white border border-amber-300 rounded-xl p-2 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700">واحد / طبقه:</label>
+                    <input
+                      type="text"
+                      placeholder="مثال: واحد ۳، طبقه دوم"
+                      value={unit}
+                      onChange={(e) => setUnit(e.target.value)}
+                      className="w-full bg-white border border-amber-300 rounded-xl p-2 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">توضیحات تکمیلی جهت پیدا کردن محل:</label>
+                  <input
+                    type="text"
+                    placeholder="مثال: زنگ سمت راست، روبروی نانوایی"
+                    value={addressNotes}
+                    onChange={(e) => setAddressNotes(e.target.value)}
+                    className="w-full bg-white border border-amber-300 rounded-xl p-2 text-xs"
+                  />
+                </div>
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <label className="block font-bold text-slate-700 text-xs">
-                توضیحات یا یادداشت احتمالی (اختیاری):
+            {/* Reminder Toggle */}
+            <div className="pt-2">
+              <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+                <input
+                  type="checkbox"
+                  checked={enableReminder}
+                  onChange={(e) => setEnableReminder(e.target.checked)}
+                  className="w-4 h-4 rounded text-[#3b185f]"
+                />
+                <span className="flex items-center gap-1.5">
+                  <Bell className="w-3.5 h-3.5 text-amber-600" />
+                  فعال‌سازی یادآوری هوشمند نوبت در سامانه
+                </span>
               </label>
-              <input
-                type="text"
-                placeholder="مثال: موی رنگ‌شده، سالمند با واکر، نیاز به حوله اختصاصی..."
-                value={bookingNotes}
-                onChange={(e) => setBookingNotes(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
-              />
             </div>
           </div>
         )}
 
-        {/* Step 4: Summary & Final Review */}
+        {/* Step 4: Summary & Transparent Price Breakdown */}
         {currentStep === 4 && (
           <div className="p-6 space-y-4 text-xs">
             <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-200 space-y-3">
-              <div className="font-bold text-sm text-[#3b185f] border-b border-purple-200 pb-2">
-                خلاصه مشخصات رزرو
+              <div className="font-bold text-sm text-[#3b185f] border-b border-purple-200 pb-2 flex items-center justify-between">
+                <span>صورت‌حساب شفاف نوبت زیبانو</span>
+                <span className="text-[11px] text-purple-700 font-semibold">{salon.name}</span>
               </div>
-              <div className="space-y-1.5 text-slate-700">
+
+              <div className="space-y-2 text-slate-700">
                 <div className="flex justify-between">
-                  <span>سالن انتخابی:</span>
-                  <strong className="text-slate-900">{salon.name}</strong>
-                </div>
-                <div className="flex justify-between">
-                  <span>خدمت:</span>
+                  <span>خدمت انتخاب‌شده:</span>
                   <strong className="text-slate-900">{currentService.name}</strong>
                 </div>
                 <div className="flex justify-between">
-                  <span>نحوه ارائه:</span>
+                  <span>مدت زمان خدمت:</span>
+                  <strong className="text-slate-900 tabular-nums">{currentService.durationMinutes} دقیقه</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span>نحوه دریافت خدمت:</span>
                   <strong className="text-slate-900">
-                    {serviceType === 'at_home' ? 'اعزام به محل مشتری' : 'مراجعه حضوری به سالن'}
+                    {serviceType === 'at_home' ? 'اعزام آرایشگر به محل مشتری' : 'مراجعه حضوری به سالن'}
                   </strong>
                 </div>
                 <div className="flex justify-between">
-                  <span>تاریخ و ساعت:</span>
+                  <span>زمان تعیین‌شده:</span>
                   <strong className="text-slate-900 tabular-nums">
-                    {bookingDate} | سانس {selectedTimeSlot}
+                    {bookingDate} (سانس {selectedTimeSlot})
                   </strong>
                 </div>
-                <div className="flex justify-between">
-                  <span>متقاضی:</span>
-                  <strong className="text-slate-900">{customerName} ({customerPhone})</strong>
-                </div>
+
                 {serviceType === 'at_home' && (
-                  <div className="flex justify-between">
-                    <span>آدرس:</span>
-                    <strong className="text-slate-900 max-w-xs text-left truncate">{customerAddress}</strong>
+                  <div className="border-t border-purple-200/80 pt-2 space-y-1">
+                    <div className="flex justify-between text-slate-600">
+                      <span>تعرفه پایه خدمت:</span>
+                      <span className="tabular-nums">{currentService.price.toLocaleString('fa-IR')} تومان</span>
+                    </div>
+                    <div className="flex justify-between text-amber-800 font-semibold">
+                      <span>هزینه ایاب‌وذهاب خدمات در محل:</span>
+                      <span className="tabular-nums">+{salon.homeServiceFee.toLocaleString('fa-IR')} تومان</span>
+                    </div>
                   </div>
                 )}
+
                 <div className="flex justify-between pt-2 border-t border-purple-200 text-sm font-black text-[#2a0e44]">
-                  <span>مبلغ قابل پرداخت در محل:</span>
+                  <span>مجموع هزینه قابل تسویه در محل:</span>
                   <span className="tabular-nums">
                     {(serviceType === 'at_home' ? currentService.price + salon.homeServiceFee : currentService.price).toLocaleString('fa-IR')} تومان
                   </span>
@@ -450,7 +559,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             </div>
 
             <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 leading-relaxed">
-              <strong>یادداشت انطباق با الزامات فاز اول:</strong> هیچ درگاه پرداخت اینترنتی واقعی متصل نیست. پرداخت صرفاً در محل انجام خدمت و پس از رضایت مشتری صورت می‌پذیرد.
+              <strong>اطمینان از رضایت:</strong> هزینه پس از اتمام خدمت و رضایت کامل شما در محل دریافت می‌شود.
             </div>
           </div>
         )}
@@ -464,16 +573,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
             <div className="space-y-1">
               <h4 className="text-xl font-extrabold text-slate-900">
-                درخواست رزرو آزمایشی با موفقیت ثبت شد
+                درخواست نوبت شما با موفقیت ثبت شد
               </h4>
               <p className="text-slate-500 max-w-sm mx-auto">
-                اطلاعات در حافظه مرورگر شما (LocalStorage) ذخیره گردید و در پنل آرایشگر نیز در دسترس است.
+                اطلاعات رزرو ثبت گردید و برای آرایشگر محترم ارسال شد. پیام یادآوری در زمان مقرر نمایش داده خواهد شد.
               </p>
             </div>
 
             {/* Tracking Code Box */}
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 max-w-xs mx-auto space-y-1">
-              <span className="text-[11px] text-slate-400 font-bold block">کد رهگیری اختصاصی:</span>
+              <span className="text-[11px] text-slate-400 font-bold block">کد رهگیری نوبت:</span>
               <span className="text-2xl font-black text-[#3b185f] tracking-widest tabular-nums">
                 {confirmedBooking.trackingCode}
               </span>
@@ -519,7 +628,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               onClick={handleNext}
               className="px-6 py-2.5 bg-[#3b185f] hover:bg-[#2b1047] text-white text-xs font-bold rounded-xl transition-colors shadow-xs flex items-center gap-1.5"
             >
-              <span>{currentStep === 4 ? 'تایید و ثبت نهایی رزرو' : 'مرحله بعدی'}</span>
+              <span>{currentStep === 4 ? 'تأیید و ثبت نهایی رزرو' : 'مرحله بعدی'}</span>
               <ArrowLeft className="w-4 h-4 text-amber-300" />
             </button>
           </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Logo } from './Logo';
-import { ActiveView } from '../../types';
+import { ActiveView, UserAccount } from '../../types';
 import { 
   Sparkles, 
   Home, 
@@ -13,7 +13,9 @@ import {
   BookOpen, 
   Menu, 
   X,
-  ShieldAlert
+  User,
+  LogOut,
+  Camera
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -21,13 +23,21 @@ interface NavbarProps {
   onNavigate: (view: ActiveView, extra?: any) => void;
   compareCount: number;
   bookingsCount: number;
+  currentUser: UserAccount | null;
+  onOpenAuth: () => void;
+  onLogout: () => void;
+  onOpenSimulator: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeView,
   onNavigate,
   compareCount,
-  bookingsCount
+  bookingsCount,
+  currentUser,
+  onOpenAuth,
+  onLogout,
+  onOpenSimulator
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -35,17 +45,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-amber-900/10 shadow-xs">
-      {/* Top Academic Dual-Mode Switcher Bar */}
+      {/* Top Professional Dual-Mode Switcher Bar */}
       <div className="bg-[#2a0e44] text-white px-4 py-2 border-b border-amber-500/20">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 font-medium text-amber-300">
+            <span className="inline-flex items-center gap-1 font-semibold text-amber-300">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              پروژه فاز اول درس تجارت الکترونیکی — دانشگاه یزد
+              زیبانو | سامانه هوشمند رزرو و مقایسه آنلاین آرایشگاه
             </span>
             <span className="hidden md:inline text-purple-300/70">|</span>
-            <span className="hidden md:inline text-purple-200">
-              نسخه اولیه آزمایشی (MVP) و پرونده تحلیلی
+            <span className="hidden md:inline text-purple-200 text-[11px]">
+              انتخاب آگاهانه خدمات زنانه، مردانه و در محل
             </span>
           </div>
 
@@ -53,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-1.5 p-0.5 bg-purple-950/80 rounded-lg border border-purple-800/60">
             <button
               onClick={() => onNavigate('home')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
                 !isDossier
                   ? 'bg-amber-400 text-[#2a0e44] shadow-xs font-semibold'
                   : 'text-purple-200 hover:text-white'
@@ -63,7 +73,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => onNavigate('dossier')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
                 isDossier
                   ? 'bg-amber-400 text-[#2a0e44] shadow-xs font-semibold'
                   : 'text-purple-200 hover:text-white'
@@ -91,7 +101,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <nav className="hidden lg:flex items-center gap-1 text-sm font-medium text-slate-700">
             <button
               onClick={() => onNavigate('home')}
-              className={`px-3 py-2 rounded-lg transition-colors ${
+              className={`px-3 py-2 rounded-lg transition-colors cursor-pointer ${
                 activeView === 'home' 
                   ? 'text-[#3b185f] font-bold bg-purple-50' 
                   : 'hover:text-[#3b185f] hover:bg-slate-50'
@@ -101,29 +111,45 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             <button
-              onClick={() => onNavigate('search', { gender: 'women' })}
-              className="px-3 py-2 rounded-lg transition-colors hover:text-[#3b185f] hover:bg-slate-50"
+              onClick={() => onNavigate('women-salons')}
+              className={`px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+                activeView === 'women-salons'
+                  ? 'text-pink-700 font-bold bg-pink-50'
+                  : 'hover:text-pink-700 hover:bg-pink-50/50'
+              }`}
             >
               آرایشگاه‌های زنانه
             </button>
 
             <button
-              onClick={() => onNavigate('search', { gender: 'men' })}
-              className="px-3 py-2 rounded-lg transition-colors hover:text-[#3b185f] hover:bg-slate-50"
+              onClick={() => onNavigate('men-salons')}
+              className={`px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+                activeView === 'men-salons'
+                  ? 'text-amber-800 font-bold bg-amber-50'
+                  : 'hover:text-amber-800 hover:bg-amber-50/50'
+              }`}
             >
               آرایشگاه‌های مردانه
             </button>
 
             <button
+              onClick={onOpenSimulator}
+              className="px-3 py-2 rounded-lg transition-colors text-purple-900 hover:bg-purple-50 font-bold flex items-center gap-1 cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>شبیه‌ساز چهره</span>
+            </button>
+
+            <button
               onClick={() => onNavigate('search', { homeServiceOnly: true })}
-              className="px-3 py-2 rounded-lg transition-colors hover:text-[#3b185f] hover:bg-slate-50 text-amber-800 font-medium"
+              className="px-3 py-2 rounded-lg transition-colors hover:text-[#3b185f] hover:bg-slate-50 text-amber-800 font-medium cursor-pointer"
             >
               خدمات در محل
             </button>
 
             <button
               onClick={() => onNavigate('compare')}
-              className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 ${
+              className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
                 activeView === 'compare'
                   ? 'text-[#3b185f] font-bold bg-purple-50'
                   : 'hover:text-[#3b185f] hover:bg-slate-50'
@@ -140,7 +166,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <button
               onClick={() => onNavigate('my-bookings')}
-              className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 ${
+              className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
                 activeView === 'my-bookings'
                   ? 'text-[#3b185f] font-bold bg-purple-50'
                   : 'hover:text-[#3b185f] hover:bg-slate-50'
@@ -157,7 +183,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <button
               onClick={() => onNavigate('barber-panel')}
-              className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 ${
+              className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
                 activeView === 'barber-panel'
                   ? 'text-[#3b185f] font-bold bg-purple-50'
                   : 'hover:text-[#3b185f] hover:bg-slate-50 text-slate-600'
@@ -168,11 +194,38 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </nav>
 
-          {/* Action CTAs */}
+          {/* Action CTAs & Auth */}
           <div className="hidden lg:flex items-center gap-3">
+            {currentUser ? (
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-xs">
+                <div className="w-6 h-6 rounded-full bg-[#3b185f] text-white flex items-center justify-center font-bold text-[10px]">
+                  {currentUser.role === 'barber' ? 'آ' : 'م'}
+                </div>
+                <div className="text-right">
+                  <span className="font-bold text-slate-800 block">{currentUser.fullName || currentUser.name}</span>
+                  <span className="text-[10px] text-slate-500">{currentUser.role === 'barber' ? 'آرایشگر' : 'مشتری'}</span>
+                </div>
+                <button
+                  onClick={onLogout}
+                  title="خروج از حساب"
+                  className="p-1 hover:text-red-600 text-slate-400 transition-colors ml-1 cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onOpenAuth}
+                className="px-3.5 py-2 text-xs font-bold text-slate-700 hover:text-[#3b185f] bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <User className="w-3.5 h-3.5 text-amber-600" />
+                <span>ورود / ثبت‌نام</span>
+              </button>
+            )}
+
             <button
               onClick={() => onNavigate('search')}
-              className="px-4 py-2 text-xs font-semibold text-white bg-[#3b185f] hover:bg-[#2b1047] rounded-lg shadow-sm transition-all duration-150 flex items-center gap-1.5"
+              className="px-4 py-2 text-xs font-semibold text-white bg-[#3b185f] hover:bg-[#2b1047] rounded-lg shadow-sm transition-all duration-150 flex items-center gap-1.5 cursor-pointer"
             >
               <Scissors className="w-3.5 h-3.5 text-amber-300" />
               جستجوی آرایشگاه
@@ -208,6 +261,41 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-2">
+          {/* Auth in Mobile */}
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 mb-2 flex items-center justify-between">
+            {currentUser ? (
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="w-7 h-7 rounded-full bg-[#3b185f] text-white flex items-center justify-center font-bold text-xs">
+                    {currentUser.role === 'barber' ? 'آ' : 'م'}
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-800 block">{currentUser.fullName || currentUser.name}</span>
+                    <span className="text-[10px] text-slate-500">{currentUser.phone} ({currentUser.role === 'barber' ? 'آرایشگر' : 'مشتری'})</span>
+                  </div>
+                </div>
+                <button
+                  onClick={onLogout}
+                  className="px-2.5 py-1 text-xs text-red-600 font-bold hover:bg-red-50 rounded-lg flex items-center gap-1"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  خروج
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onOpenAuth();
+                }}
+                className="w-full py-2 bg-amber-500 text-slate-950 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs"
+              >
+                <User className="w-4 h-4" />
+                ورود یا ثبت‌نام (مشتری / آرایشگر)
+              </button>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-2 pb-3 border-b border-slate-100">
             <button
               onClick={() => {
@@ -243,24 +331,35 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => {
-              onNavigate('search', { gender: 'women' });
+              onNavigate('women-salons');
               setMobileMenuOpen(false);
             }}
-            className="w-full text-right py-2 px-3 rounded-md text-sm font-medium hover:bg-slate-50 flex items-center gap-2"
+            className="w-full text-right py-2 px-3 rounded-md text-sm font-medium hover:bg-pink-50 text-pink-700 flex items-center gap-2"
           >
-            <Scissors className="w-4 h-4 text-purple-600" />
+            <Scissors className="w-4 h-4 text-pink-600" />
             آرایشگاه‌های زنانه
           </button>
 
           <button
             onClick={() => {
-              onNavigate('search', { gender: 'men' });
+              onNavigate('men-salons');
               setMobileMenuOpen(false);
             }}
-            className="w-full text-right py-2 px-3 rounded-md text-sm font-medium hover:bg-slate-50 flex items-center gap-2"
+            className="w-full text-right py-2 px-3 rounded-md text-sm font-medium hover:bg-amber-50 text-amber-800 flex items-center gap-2"
           >
             <Scissors className="w-4 h-4 text-amber-700" />
             آرایشگاه‌های مردانه
+          </button>
+
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              onOpenSimulator();
+            }}
+            className="w-full text-right py-2 px-3 rounded-md text-sm font-bold text-purple-900 bg-purple-50/50 hover:bg-purple-100 flex items-center gap-2"
+          >
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            شبیه‌ساز زیبایی چهره
           </button>
 
           <button
@@ -318,7 +417,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="w-full text-right py-2 px-3 rounded-md text-sm font-medium hover:bg-slate-50 flex items-center gap-2 text-slate-700"
           >
             <Briefcase className="w-4 h-4 text-slate-500" />
-            پنل مدیریت آرایشگر (آزمایشی)
+            پنل مدیریت آرایشگر
           </button>
 
           <div className="pt-2">

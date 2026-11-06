@@ -3,7 +3,9 @@ import {
   Salon, 
   BookingRequest, 
   ActiveView, 
-  ServiceItem 
+  ServiceItem,
+  UserAccount,
+  PortfolioItem
 } from './types';
 import { INITIAL_SALONS, INITIAL_BOOKINGS } from './data/mockData';
 import { Navbar } from './components/common/Navbar';
@@ -15,10 +17,14 @@ import { MyBookingsView } from './components/booking/MyBookingsView';
 import { BarberPanelView } from './components/barber/BarberPanelView';
 import { BusinessDossierView } from './components/dossier/BusinessDossierView';
 import { BookingModal } from './components/booking/BookingModal';
+import { GenderScopedSalonsView } from './components/salons/GenderScopedSalonsView';
+import { AuthModal } from './components/auth/AuthModal';
+import { BeautySimulatorModal } from './components/simulator/BeautySimulatorModal';
 
 const LOCAL_STORAGE_SALONS_KEY = 'zibano_salons_v1';
 const LOCAL_STORAGE_BOOKINGS_KEY = 'zibano_bookings_v1';
 const LOCAL_STORAGE_COMPARE_KEY = 'zibano_compare_v1';
+const LOCAL_STORAGE_ACCOUNT_KEY = 'zibano_account_v1';
 
 export default function App() {
   // Salons state with LocalStorage persistence
@@ -54,6 +60,17 @@ export default function App() {
     return [];
   });
 
+  // User account state with LocalStorage persistence
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_ACCOUNT_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('LocalStorage error reading account:', e);
+    }
+    return null;
+  });
+
   // Active view navigation
   const [activeView, setActiveView] = useState<ActiveView>('home');
   const [selectedSalon, setSelectedSalon] = useState<Salon | null>(null);
@@ -74,6 +91,17 @@ export default function App() {
   }>({
     isOpen: false,
     salon: null
+  });
+
+  // Auth Modal State
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  // Beauty Simulator Modal State
+  const [simulatorModal, setSimulatorModal] = useState<{
+    isOpen: boolean;
+    preselectedStyle?: PortfolioItem;
+  }>({
+    isOpen: false
   });
 
   // Save to LocalStorage on changes
@@ -101,9 +129,25 @@ export default function App() {
     }
   }, [comparedSalonIds]);
 
+  useEffect(() => {
+    try {
+      if (currentUser) {
+        localStorage.setItem(LOCAL_STORAGE_ACCOUNT_KEY, JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem(LOCAL_STORAGE_ACCOUNT_KEY);
+      }
+    } catch (e) {
+      console.warn('LocalStorage save account error:', e);
+    }
+  }, [currentUser]);
+
   // Navigation router
   const handleNavigate = (view: ActiveView, extra?: any) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (view === 'simulator') {
+      setSimulatorModal({ isOpen: true });
+      return;
+    }
     if (view === 'search' && extra) {
       setSearchFilters(extra);
     }
@@ -163,6 +207,12 @@ export default function App() {
     setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status } : b));
   };
 
+  // Add new registered salon by barber
+  const handleRegisterSalon = (newSalon: Salon) => {
+    setSalons(prev => [newSalon, ...prev]);
+    setSelectedSalon(newSalon);
+  };
+
   // View salon details
   const handleSelectSalon = (salon: Salon) => {
     setSelectedSalon(salon);
@@ -170,16 +220,28 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Open simulator with optional style
+  const handleOpenSimulator = (item?: PortfolioItem) => {
+    setSimulatorModal({
+      isOpen: true,
+      preselectedStyle: item
+    });
+  };
+
   const comparedSalons = salons.filter(s => comparedSalonIds.includes(s.id));
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAF8F5] text-slate-800">
-      {/* Universal Dual-Mode Navbar */}
+      {/* Universal Navbar */}
       <Navbar
         activeView={activeView}
         onNavigate={handleNavigate}
         compareCount={comparedSalonIds.length}
         bookingsCount={bookings.length}
+        currentUser={currentUser}
+        onOpenAuth={() => setAuthModalOpen(true)}
+        onLogout={() => setCurrentUser(null)}
+        onOpenSimulator={() => setSimulatorModal({ isOpen: true })}
       />
 
       {/* Main Content View Switcher */}
@@ -192,6 +254,28 @@ export default function App() {
             onToggleCompare={handleToggleCompare}
             comparedSalonIds={comparedSalonIds}
             onNavigate={handleNavigate}
+          />
+        )}
+
+        {activeView === 'women-salons' && (
+          <GenderScopedSalonsView
+            gender="women"
+            salons={salons}
+            onSelectSalon={handleSelectSalon}
+            onBookSalon={handleOpenBooking}
+            onToggleCompare={handleToggleCompare}
+            comparedSalonIds={comparedSalonIds}
+          />
+        )}
+
+        {activeView === 'men-salons' && (
+          <GenderScopedSalonsView
+            gender="men"
+            salons={salons}
+            onSelectSalon={handleSelectSalon}
+            onBookSalon={handleOpenBooking}
+            onToggleCompare={handleToggleCompare}
+            comparedSalonIds={comparedSalonIds}
           />
         )}
 
@@ -213,6 +297,7 @@ export default function App() {
             onBook={handleOpenBooking}
             onToggleCompare={handleToggleCompare}
             isCompared={comparedSalonIds.includes(selectedSalon.id)}
+            onOpenSimulator={handleOpenSimulator}
           />
         )}
 
@@ -266,6 +351,33 @@ export default function App() {
           }}
         />
       )}
+
+      {/* Auth Modal (Customer vs Barber) */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccessLogin={(account: UserAccount, newSalon?: Salon) => {
+          setCurrentUser(account);
+          if (newSalon) {
+            handleRegisterSalon(newSalon);
+          }
+          if (account.role === 'barber') {
+            setActiveView('barber-panel');
+          }
+        }}
+      />
+
+      {/* Beauty Simulator Modal */}
+      <BeautySimulatorModal
+        isOpen={simulatorModal.isOpen}
+        onClose={() => setSimulatorModal({ isOpen: false })}
+        salons={salons}
+        initialPortfolioItem={simulatorModal.preselectedStyle}
+        onBookService={(salon: Salon, service?: ServiceItem) => {
+          setSimulatorModal({ isOpen: false });
+          handleOpenBooking(salon, service);
+        }}
+      />
     </div>
   );
 }
