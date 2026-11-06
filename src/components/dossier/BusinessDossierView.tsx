@@ -771,14 +771,14 @@ export const BusinessDossierView: React.FC<{ onGoToMVP: () => void }> = ({ onGoT
                     </blockquote>
                   </div>
 
-                  {/* Customer 3 (Added) */}
+                  {/* Customer 3 */}
                   <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/40 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#3b185f]">مشتری ۳ (شاغل و ساکن آپارتمان)</span>
-                      <span className="text-[11px] bg-white px-2 py-0.5 rounded text-purple-700 border">متقاضی خدمات منظم</span>
+                      <span className="font-bold text-[#3b185f]">مشتری ۳ (شاغل و متقاضی نوبت‌گیری غیرحضوری)</span>
+                      <span className="text-[11px] bg-white px-2 py-0.5 rounded text-purple-700 border">نیاز به رزرو آنلاین و یادآوری خودکار نوبت</span>
                     </div>
                     <blockquote className="text-xs italic text-slate-700 leading-relaxed border-r-2 border-purple-400 pr-3">
-                      "به دلیل مشغله زیاد شغلی، هماهنگی تلفنی برای من واقعاً دردسر دارد. بارها پیش آمده نوبتم را فراموش کنم یا وقتی به سالن برسم معطل شوم. نیاز دارم در هر ساعت از شبانه‌روز بتوانم سانس‌های خالی را ببینم، به صورت آنلاین رزرو کنم و سیستم یادآوری خودکار نوبت داشته باشم."
+                      "من از این که برای گرفتن نوبت باید کلی تلفنی حرف بزنم بدم میاد، چون گاهی وسط کارم هستم و نمیتونم. از اون طرف هم چون ذهنم درگیره، تاریخ نوبت رو فراموش میکنم. اگه بشه آنلاین نوبت گرفت و خود سیستم قبل از موعد بهم پیام یادآوری بده، دیگه هیچ مشکلی ندارم."
                     </blockquote>
                   </div>
 
